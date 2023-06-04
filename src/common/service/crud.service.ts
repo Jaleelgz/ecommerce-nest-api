@@ -94,9 +94,10 @@ export abstract class CRUDService<T extends Document> {
    * Creates an array of documents
    * @param dtoList
    */
-  async createAll(dtoList: [any]) {
+  async createAll(dtoList: any) {
     try {
-      await this.model.insertMany(dtoList, { ordered: false }); // With unordered inserts, if an error occurs during an insert of one of the documents, MongoDB continues to insert the remaining docs
+      const res = await this.model.insertMany(dtoList, { ordered: false }); // With unordered inserts, if an error occurs during an insert of one of the documents, MongoDB continues to insert the remaining docs
+      return res;
     } catch (err) {
       if (
         err.message.indexOf('Duplicate Key') >= 0 ||
