@@ -6,7 +6,7 @@ import { User } from 'src/user/schema/user.schema';
 export type CartDocument = HydratedDocument<Cart>;
 
 @Schema({
-  collection: 'products',
+  collection: 'cart',
   timestamps: true,
   collation: { locale: 'en', strength: 2 },
 })

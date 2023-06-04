@@ -26,6 +26,7 @@ import { plainToClass } from 'class-transformer';
 import { AuthToken } from 'src/user/decorators/authToken.decorator';
 import { IDecodedIdToken } from 'src/user/interface/iDecodedIdToken';
 import { Cart } from '../schema/cart.schema';
+import { Product } from '../schema/products.schema';
 
 @ApiTags('Cart')
 @ApiBearerAuth()
@@ -89,7 +90,8 @@ export class CartController {
 
       {
         $project: {
-          id: '$product.productId',
+          _id:0,
+          id: '$productId',
           cartId: '$_id',
           name: '$product.name',
           image: '$product.image',
@@ -108,6 +110,7 @@ export class CartController {
     }
 
     const retRes = cartRes.map((cartItem) => this.toCartModel(cartItem));
+
     return retRes;
   }
 
@@ -129,9 +132,18 @@ export class CartController {
       productId: productId,
       userId: token.userId,
     });
-    const productItem = await this.cartService.get({ _id: productId });
 
-    if (cartItem.quantity === 1) {
+    const productItem = await this.productService.get({ _id: productId });
+
+    if (!productItem) {
+      throw new BadRequestException('Product not found!');
+    }
+
+    if (!cartItem) {
+      throw new BadRequestException('Product not found in cart!');
+    }
+
+    if (cartItem?.quantity === 1) {
       isDelete = true;
     }
 
@@ -163,10 +175,14 @@ export class CartController {
       if (!cartResult) throw new NotFoundException('Item not found!');
 
       const returnModel = this.toCartModel({
-        ...cartResult,
-        ...productResult,
         id: productId,
-        cartId: cartResult?._id ? cartResult?._id : cartResult?.id,
+        cartId: cartItem?._id ? cartItem?._id : cartItem?.id,
+        name: productItem.name,
+        image: productItem.image,
+        price: productItem.price,
+        stock: productItem.stock + 1,
+        rating: productItem.rating,
+        quantity: cartItem.quantity - 1,
       });
       return returnModel;
     } catch (e) {
@@ -194,7 +210,14 @@ export class CartController {
       productId: productId,
       userId: token.userId,
     });
-    const productItem = await this.cartService.get({ _id: productId });
+
+    const productItem: Product = await this.productService.get({
+      _id: productId,
+    });
+
+    if (!productItem) {
+      throw new BadRequestException('Product not found!');
+    }
 
     if (!cartItem) {
       isNew = true;
@@ -228,11 +251,16 @@ export class CartController {
       if (!cartResult) throw new NotFoundException('Item not found!');
 
       const returnModel = this.toCartModel({
-        ...cartResult,
-        ...productResult,
         id: productId,
         cartId: cartResult?._id ? cartResult?._id : cartResult?.id,
+        name: productItem.name,
+        image: productItem.image,
+        price: productItem.price,
+        stock: productItem.stock - 1,
+        rating: productItem.rating,
+        quantity: isNew ? 1 : cartItem.quantity + 1,
       });
+
       return returnModel;
     } catch (e) {
       await session.abortTransaction();

@@ -86,7 +86,7 @@ export abstract class CRUDService<T extends Document> {
    * Creates a new document
    * @param dto
    */
-  async create(dto: any, session: any): Promise<T> {
+  async create(dto: any, session?: any): Promise<T> {
     return new this.model(dto).save({ session });
   }
 
