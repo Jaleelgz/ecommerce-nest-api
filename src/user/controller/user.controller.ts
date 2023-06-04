@@ -2,26 +2,19 @@ import {
   Body,
   Controller,
   Post,
-  Delete,
   BadRequestException,
   UseGuards,
   NotFoundException,
-  Put,
-  Res,
-  HttpStatus,
-  Param,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Auth, getAuth } from 'firebase/auth';
-import * as firebase from 'firebase-admin';
 import { initializeApp } from 'firebase/app';
 import { AuthToken } from '../decorators/authToken.decorator';
 import { IDecodedIdToken } from '../interface/iDecodedIdToken';
-import { Response } from 'express';
-import { UserAccessTokenRequestResponseDTO } from '../dto/common/userAccessTokenRequestResponse.dto';
 import { UserAuthGuard } from '../guards/userAuth.guard';
 import { SignUpRequestDTO } from '../dto/request/signUpRequest.dto';
 import { UserService } from '../service/user.service';
+import { SignUpNInResponseDTO } from '../dto/response/signInResponse.dto';
 
 @ApiTags('User')
 @Controller('user')
@@ -43,6 +36,7 @@ export class UserController {
     this.firebaseAuth = getAuth(initializeApp(firebaseConfig));
   }
 
+  @ApiResponse({ type: SignUpNInResponseDTO })
   @Post('sign_up')
   @UseGuards(UserAuthGuard)
   async signUpUser(
@@ -123,16 +117,6 @@ export class UserController {
         userId: userRes._id ? userRes._id : userRes.id,
       });
 
-      const userAccessTokenRequestResponseDTO =
-        new UserAccessTokenRequestResponseDTO();
-
-      userAccessTokenRequestResponseDTO.name = userRes.name;
-      userAccessTokenRequestResponseDTO.email = userRes.email;
-      userAccessTokenRequestResponseDTO.phone = userRes.phone;
-      userAccessTokenRequestResponseDTO.userId = userRes._id
-        ? userRes._id
-        : userRes.id;
-
       return {
         userToken: token.userToken,
         name: userRes.name,
@@ -146,6 +130,7 @@ export class UserController {
     }
   }
 
+  @ApiResponse({ type: SignUpNInResponseDTO })
   @Post('sign_in')
   @UseGuards(UserAuthGuard)
   async signInUser(@AuthToken() token: IDecodedIdToken): Promise<any> {
@@ -165,20 +150,44 @@ export class UserController {
         throw new NotFoundException('User does not exist.');
       }
 
-      const userAccessTokenRequestResponseDTO =
-        new UserAccessTokenRequestResponseDTO();
+      return {
+        userToken: token.userToken,
+        name: userRes.name,
+        phone: userRes.phone,
+        email: userRes.email,
+        userId: userRes._id ? userRes._id : userRes.id,
+        address: userRes.address,
+      };
+    } catch (e) {
+      throw new BadRequestException(e);
+    }
+  }
 
-      userAccessTokenRequestResponseDTO.name = userRes.name;
-      userAccessTokenRequestResponseDTO.email = userRes.email;
-      userAccessTokenRequestResponseDTO.phone = userRes.phone;
-      userAccessTokenRequestResponseDTO.userId = userRes._id
-        ? userRes._id
-        : userRes.id;
+  @ApiResponse({ type: SignUpNInResponseDTO })
+  @Post('profile')
+  @UseGuards(UserAuthGuard)
+  async getUserProfile(
+    @AuthToken() token: IDecodedIdToken,
+  ): Promise<SignUpNInResponseDTO> {
+    try {
+      if (!token.userId) {
+        throw new NotFoundException('User does not exist.');
+      }
+
+      const userRes = await this.userService.get(
+        { _id: token.userId },
+        null,
+        null,
+        null,
+      );
+
+      if (!userRes) {
+        throw new NotFoundException('User does not exist.');
+      }
 
       return {
         userToken: token.userToken,
         name: userRes.name,
-        image: userRes.image,
         phone: userRes.phone,
         email: userRes.email,
         userId: userRes._id ? userRes._id : userRes.id,

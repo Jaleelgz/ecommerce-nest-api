@@ -33,6 +33,14 @@ export class UserAuthGuard implements CanActivate {
 
     request.authToken = { ...decodedToken, userToken: token };
 
+    if (decodedToken.userId) {
+      const userRes = await this.userService.get({ _id: decodedToken.userId });
+
+      if (userRes) {
+        request.user = userRes;
+      }
+    }
+
     return decodedToken.email || decodedToken.phone_number || decodedToken.phone
       ? true
       : false;
