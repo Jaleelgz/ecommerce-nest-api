@@ -86,8 +86,8 @@ export abstract class CRUDService<T extends Document> {
    * Creates a new document
    * @param dto
    */
-  async create(dto: any): Promise<T> {
-    return new this.model(dto).save();
+  async create(dto: any, session: any): Promise<T> {
+    return new this.model(dto).save({ session });
   }
 
   /**
@@ -113,9 +113,14 @@ export abstract class CRUDService<T extends Document> {
    * @param conditions
    * @param update
    */
-  async update(conditions: Partial<Record<keyof T, unknown>>, update: any) {
+  async update(
+    conditions: Partial<Record<keyof T, unknown>>,
+    update: any,
+    session?: any,
+  ) {
     return this.model.findOneAndUpdate(conditions as FilterQuery<T>, update, {
       new: true,
+      session,
     });
   }
 

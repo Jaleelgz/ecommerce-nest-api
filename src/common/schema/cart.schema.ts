@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
 import { Product } from './products.schema';
+import { User } from 'src/user/schema/user.schema';
 
 export type CartDocument = HydratedDocument<Cart>;
 
@@ -15,6 +16,9 @@ export class Cart {
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: Product.name })
   productId: string;
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: User.name })
+  userId: string;
 
   @Prop({ trim: true })
   quantity: number;
