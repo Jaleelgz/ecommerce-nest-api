@@ -21,7 +21,7 @@ export class User {
   @Prop({ trim: true, unique: true })
   email: string;
 
-  @Prop({ trim: true })
+  @Prop({ trim: true, required: false })
   address: string;
 }
 
