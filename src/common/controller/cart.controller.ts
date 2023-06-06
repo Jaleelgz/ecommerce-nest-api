@@ -45,14 +45,16 @@ export class CartController {
   @ApiResponse({ type: [CartResponseDTO] })
   @UseGuards(UserAuthGuard)
   async getCartItems(
-    @User() user: UserResponseDTO,
+    @User() user: any,
     @AuthToken() token: IDecodedIdToken,
   ): Promise<CartResponseDTO[]> {
     const aggregation = `[
       {
         $match: {
           $expr: {
-            $eq: ['$userId', { $toObjectId: '${token.userId}' }],
+            $eq: ['$userId', { $toObjectId: '${
+              token.userId ? token.userId : user._id ? user._id : user.id
+            }' }],
           },
         },
       },
@@ -123,6 +125,7 @@ export class CartController {
   async removeFromCart(
     @Param('productId') productId: string,
     @AuthToken() token: IDecodedIdToken,
+    @User() user: any,
   ): Promise<CartResponseDTO> {
     let isDelete = false;
     const session = await this.connection.startSession();
@@ -130,7 +133,7 @@ export class CartController {
 
     const cartItem = await this.cartService.get({
       productId: productId,
-      userId: token.userId,
+      userId: user._id ? user._id : user.id,
     });
 
     const productItem = await this.productService.get({ _id: productId });
@@ -152,12 +155,12 @@ export class CartController {
 
       if (isDelete) {
         cartResult = await this.cartService.delete(
-          { productId: productId, userId: token.userId },
+          { productId: productId, userId: user._id ? user._id : user.id },
           session,
         );
       } else {
         cartResult = await this.cartService.update(
-          { productId: productId, userId: token.userId },
+          { productId: productId, userId: user._id ? user._id : user.id },
           { quantity: cartItem.quantity - 1 },
           session,
         );
@@ -201,6 +204,7 @@ export class CartController {
   async addToCart(
     @Param('productId') productId: string,
     @AuthToken() token: IDecodedIdToken,
+    @User() user: any,
   ): Promise<CartResponseDTO> {
     let isNew = false;
     const session = await this.connection.startSession();
@@ -208,7 +212,7 @@ export class CartController {
 
     const cartItem = await this.cartService.get({
       productId: productId,
-      userId: token.userId,
+      userId: user._id ? user._id : user.id,
     });
 
     const productItem: Product = await this.productService.get({
@@ -228,12 +232,16 @@ export class CartController {
 
       if (isNew) {
         cartResult = await this.cartService.create(
-          { productId: productId, userId: token.userId, quantity: 1 },
+          {
+            productId: productId,
+            userId: user._id ? user._id : user.id,
+            quantity: 1,
+          },
           session,
         );
       } else {
         cartResult = await this.cartService.update(
-          { productId: productId, userId: token.userId },
+          { productId: productId, userId: user._id ? user._id : user.id },
           { quantity: cartItem.quantity + 1 },
           session,
         );
